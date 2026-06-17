@@ -2,15 +2,14 @@
 import {
   ArcRotateCamera,
   Color3,
+  Color4,
   CubeTexture,
   Engine,
   HemisphericLight,
   MeshBuilder,
   Scene,
   StandardMaterial,
-  Texture,
   Vector3,
-  Vector4,
 } from "@babylonjs/core";
 import { useEffect, useRef } from "react";
 
@@ -27,153 +26,143 @@ export default function DropCity() {
 
       engine = new Engine(canvas, true);
       scene = new Scene(engine);
+      scene.clearColor = new Color4(0.05, 0.06, 0.1, 1);
+      scene.fogMode = Scene.FOGMODE_EXP2;
+      scene.fogDensity = 0.012;
+      scene.fogColor = new Color3(0.05, 0.06, 0.1);
+
       const envTex = CubeTexture.CreateFromPrefilteredData(
         "https://playground.babylonjs.com/textures/country.env",
         scene,
       );
       scene.environmentTexture = envTex;
+      scene.environmentIntensity = 0.4;
       scene.createDefaultSkybox(envTex, true, 1000);
 
       const camera = new ArcRotateCamera(
         "camera",
         Math.PI / 2,
         Math.PI / 3,
-        30,
+        24,
         Vector3.Zero(),
         scene,
       );
       camera.attachControl(canvas, true);
+      camera.lowerRadiusLimit = 8;
+      camera.upperRadiusLimit = 60;
+      camera.upperBetaLimit = Math.PI / 2.05;
 
-      const light = new HemisphericLight("light", new Vector3(0, 1, 0), scene);
-      light.intensity = 1;
-      
+      const light = new HemisphericLight("light", new Vector3(0.3, 1, 0.2), scene);
+      light.intensity = 0.85;
+      light.diffuse = new Color3(0.95, 0.96, 1);
+      light.groundColor = new Color3(0.12, 0.13, 0.18);
+
       const ground = MeshBuilder.CreateGround(
         "ground",
         { width: 100, height: 100 },
         scene,
       );
-
       const groundMat = new StandardMaterial("groundMat", scene);
-      groundMat.diffuseColor = new Color3(0.15, 0.15, 0.15);
+      groundMat.diffuseColor = new Color3(0.08, 0.09, 0.12);
+      groundMat.specularColor = new Color3(0, 0, 0);
       ground.material = groundMat;
-    
-      
+
       const roadMat = new StandardMaterial("roadMat", scene);
-      roadMat.diffuseTexture = new Texture("road.jpg",scene);
-      
+      roadMat.diffuseColor = new Color3(0.16, 0.16, 0.18);
+      roadMat.specularColor = new Color3(0, 0, 0);
+
       const road1 = MeshBuilder.CreateBox(
         "road1",
         { width: 100, depth: 12, height: 0.2 },
         scene,
       );
-      road1.position.y = 0.2;
+      road1.position.y = 0.11;
       road1.material = roadMat;
-      
+
       const road2 = MeshBuilder.CreateBox(
         "road2",
         { width: 12, depth: 100, height: 0.2 },
         scene,
       );
-      road2.position.y = 0.1;
+      road2.position.y = 0.11;
       road2.material = roadMat;
-
-      
-      const buildingMat = new StandardMaterial("buildingMat", scene)
-
-      const tex = new Texture("/building.jpg", scene)
-      tex.uScale = 1
-      tex.vScale = 2
-
-      buildingMat.diffuseTexture = tex
-      buildingMat.specularColor = new Color3(0, 0, 0)
 
       const size = 100;
       const spacing = 7;
+      const buildingPalette = [
+        new Color3(0.55, 0.58, 0.65),
+        new Color3(0.42, 0.46, 0.55),
+        new Color3(0.6, 0.5, 0.45),
+        new Color3(0.35, 0.4, 0.5),
+      ];
 
       for (let x = -size / 2; x < size / 2; x += spacing) {
         for (let z = -size / 2; z < size / 2; z += spacing) {
           if (Math.abs(x) < 6 || Math.abs(z) < 6) continue;
 
-          const h = 5 + Math.random() * 15;
-
+          const h = 5 + Math.random() * 18;
           const building = MeshBuilder.CreateBox(
-  `b_${x}_${z}`,
-  {
-    width: 5,
-    depth: 5,
-    height: h,
-    faceUV: [
-      new Vector4(0, 0, 1, 1), 
-      new Vector4(0, 0, 1, 1), 
-      new Vector4(0, 0, 1, 1), 
-      new Vector4(0, 0, 1, 1), 
-      new Vector4(0, 0, 0, 0), 
-      new Vector4(0, 0, 0, 0), 
-    ],
-  },
-  scene
-)
-
+            `b_${x}_${z}`,
+            { width: 5, depth: 5, height: h },
+            scene,
+          );
           building.position = new Vector3(x, h / 2, z);
-          building.material = buildingMat;
+
+          const mat = new StandardMaterial(`bm_${x}_${z}`, scene);
+          mat.diffuseColor =
+            buildingPalette[Math.floor(Math.random() * buildingPalette.length)];
+          mat.specularColor = new Color3(0.05, 0.05, 0.05);
+          building.material = mat;
         }
       }
-
-      
 
       const droneRoot = MeshBuilder.CreateBox("droneRoot", { size: 1 }, scene);
       droneRoot.isVisible = false;
       droneRoot.position = new Vector3(0, 5, 0);
 
-      const indicator = MeshBuilder.CreateBox(
-        "indicator",
-        { width: 0.2, height: 0.2, depth: 1 },
-        scene,
-      );
-
-      const indicatorMat = new StandardMaterial("indicatorMat", scene);
-      indicatorMat.diffuseColor = new Color3(1, 0, 0);
-      indicator.material = indicatorMat;
-
-      indicator.parent = droneRoot;
-      indicator.position = new Vector3(0, 0, 1.2);
-
       const body = MeshBuilder.CreateBox(
         "body",
-        { width: 1.5, height: 0.4, depth: 1.5 },
+        { width: 1.5, height: 0.3, depth: 1.5 },
         scene,
       );
       body.parent = droneRoot;
-
       const bodyMat = new StandardMaterial("bodyMat", scene);
-      bodyMat.diffuseColor = new Color3(0.2, 0.4, 1);
+      bodyMat.diffuseColor = new Color3(0.85, 0.87, 0.9);
+      bodyMat.specularColor = new Color3(0.3, 0.3, 0.3);
       body.material = bodyMat;
-      
+
+      const indicator = MeshBuilder.CreateBox(
+        "indicator",
+        { width: 0.15, height: 0.15, depth: 0.9 },
+        scene,
+      );
+      indicator.parent = droneRoot;
+      indicator.position = new Vector3(0, 0.05, 1.1);
+      const indicatorMat = new StandardMaterial("indicatorMat", scene);
+      indicatorMat.diffuseColor = new Color3(1, 0.25, 0.2);
+      indicatorMat.emissiveColor = new Color3(0.6, 0.1, 0.05);
+      indicator.material = indicatorMat;
 
       const keys: Record<string, boolean> = {
         w: false,
         s: false,
-        d: false,
         a: false,
+        d: false,
         space: false,
         shift: false,
       };
 
-      window.addEventListener("keydown", (e) => {
+      const onKeyDown = (e: KeyboardEvent) => {
         const key = e.key.toLowerCase();
-
-        if (key === " " || key === "arrowup" || key === "arrowdown") {
-          e.preventDefault();
-        }
-
+        if (key === " " || key === "arrowup" || key === "arrowdown") e.preventDefault();
         if (key === " ") keys.space = true;
         if (key === "shift") keys.shift = true;
         if (key === "w") keys.w = true;
         if (key === "a") keys.a = true;
         if (key === "s") keys.s = true;
         if (key === "d") keys.d = true;
-      });
-      window.addEventListener("keyup", (e) => {
+      };
+      const onKeyUp = (e: KeyboardEvent) => {
         const key = e.key.toLowerCase();
         if (key === " ") keys.space = false;
         if (key === "shift") keys.shift = false;
@@ -181,13 +170,14 @@ export default function DropCity() {
         if (key === "a") keys.a = false;
         if (key === "s") keys.s = false;
         if (key === "d") keys.d = false;
-      });
+      };
+      window.addEventListener("keydown", onKeyDown);
+      window.addEventListener("keyup", onKeyUp);
 
       const speed = 0.09;
-      const velocity = new Vector3(0, 0, 0);
+      const turnSpeed = 0.03;
       const friction = 0.92;
-      let targetRotX = 0;
-      let targetRotZ = 0;
+      const velocity = new Vector3(0, 0, 0);
 
       engine.runRenderLoop(() => {
         const forward = new Vector3(
@@ -196,19 +186,15 @@ export default function DropCity() {
           Math.cos(droneRoot.rotation.y),
         );
 
-        const speed = 0.09;
-        const turnSpeed = 0.03;
-
         if (keys.w) velocity.addInPlace(forward.scale(speed));
         if (keys.s) velocity.addInPlace(forward.scale(-speed));
-        if (keys.space) velocity.addInPlace(new Vector3(0, -0.09, 0));
-        if (keys.shift) velocity.addInPlace(new Vector3(0, 0.09, 0));
+        if (keys.space) velocity.y -= speed;
+        if (keys.shift) velocity.y += speed;
         if (keys.a) droneRoot.rotation.y += turnSpeed;
         if (keys.d) droneRoot.rotation.y -= turnSpeed;
 
-        targetRotX = 0;
-        targetRotZ = 0;
-
+        let targetRotX = 0;
+        let targetRotZ = 0;
         if (keys.w) targetRotX = -0.5;
         if (keys.s) targetRotX = 0.5;
         if (keys.a) targetRotZ = 0.5;
@@ -220,20 +206,24 @@ export default function DropCity() {
         droneRoot.position.addInPlace(velocity);
         velocity.scaleInPlace(friction);
 
-        droneRoot.position.addInPlace(velocity);
-
-        velocity.scaleInPlace(friction);
-
-        scene.render();
         camera.target = Vector3.Lerp(camera.target, droneRoot.position, 0.1);
+        scene.render();
       });
 
-      window.addEventListener("resize", () => engine.resize());
+      const onResize = () => engine.resize();
+      window.addEventListener("resize", onResize);
+
+      return () => {
+        window.removeEventListener("keydown", onKeyDown);
+        window.removeEventListener("keyup", onKeyUp);
+        window.removeEventListener("resize", onResize);
+      };
     };
 
-    init();
+    const cleanup = init();
 
     return () => {
+      cleanup?.();
       engine?.dispose();
     };
   }, []);
