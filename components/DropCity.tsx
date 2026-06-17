@@ -135,7 +135,6 @@ export default function DropCity() {
       });
       window.addEventListener("keyup", (e) => {
         const key = e.key.toLowerCase();
-
         if (key === " ") keys.space = false;
         if (key === "shift") keys.shift = false;
         if (key === "w") keys.w = false;
@@ -144,17 +143,42 @@ export default function DropCity() {
         if (key === "d") keys.d = false;
       });
 
-      const speed = 0.7;
+      const speed = 0.09;
       const velocity = new Vector3(0, 0, 0);
       const friction = 0.92;
+      let targetRotX = 0;
+      let targetRotZ = 0;
 
       engine.runRenderLoop(() => {
-        if (keys.w) velocity.z -= speed;
-        if (keys.s) velocity.z += speed;
-        if (keys.a) velocity.x += speed;
-        if (keys.d) velocity.x -= speed;
-        if (keys.space) velocity.y -= speed;
-        if (keys.shift) velocity.y += speed;
+        if (keys.w) {
+          velocity.z -= speed;
+        }
+        if (keys.s) {
+          velocity.z += speed;
+        }
+        if (keys.a) {
+          velocity.x += speed;
+        }
+        if (keys.d) {
+          velocity.x -= speed;
+        }
+        if (keys.space) {
+          velocity.y -= speed;
+        }
+        if (keys.shift) {
+          velocity.y += speed;
+        }
+
+        targetRotX = 0;
+        targetRotZ = 0;
+
+        if (keys.w) targetRotX = -0.5;
+        if (keys.s) targetRotX = 0.5;
+        if (keys.a) targetRotZ = 0.5;
+        if (keys.d) targetRotZ = -0.5;
+
+        droneRoot.rotation.x += (targetRotX - droneRoot.rotation.x) * 0.1;
+        droneRoot.rotation.z += (targetRotZ - droneRoot.rotation.z) * 0.1;
 
         droneRoot.position.addInPlace(velocity);
 
