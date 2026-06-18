@@ -134,7 +134,6 @@ export default function DropCity() {
         box.material = multiMat;
         box.subMeshes = [];
         const verticesCount = box.getTotalVertices();
-        console.log(verticesCount)
         const indicesPerFace = 6;
         for (let face = 0; face < 6; face++) {
           const isTopOrBottom = face === 4 || face === 5;
