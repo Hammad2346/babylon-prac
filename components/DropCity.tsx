@@ -3,12 +3,16 @@ import {
   ArcRotateCamera,
   Color3,
   Color4,
-  CubeTexture,
   Engine,
   HemisphericLight,
+  Mesh,
   MeshBuilder,
+  MultiMaterial,
+  PhotoDome,
   Scene,
   StandardMaterial,
+  SubMesh,
+  Texture,
   Vector3,
 } from "@babylonjs/core";
 import { useEffect, useRef } from "react";
@@ -27,17 +31,21 @@ export default function DropCity() {
       engine = new Engine(canvas, true);
       scene = new Scene(engine);
       scene.clearColor = new Color4(0.05, 0.06, 0.1, 1);
-      scene.fogMode = Scene.FOGMODE_EXP2;
+      scene.fogMode = Scene.FOGMODE_NONE;
       scene.fogDensity = 0.012;
       scene.fogColor = new Color3(0.05, 0.06, 0.1);
 
-      const envTex = CubeTexture.CreateFromPrefilteredData(
-        "https://playground.babylonjs.com/textures/country.env",
+      
+      const skyDome = new PhotoDome(
+        "skyDome",
+        "/sky.jpg",
+        {
+          resolution: 32,
+          size: 1000,
+        },
         scene,
       );
-      scene.environmentTexture = envTex;
-      scene.environmentIntensity = 0.4;
-      scene.createDefaultSkybox(envTex, true, 1000);
+      skyDome.mesh.infiniteDistance = true;
 
       const camera = new ArcRotateCamera(
         "camera",
@@ -87,14 +95,65 @@ export default function DropCity() {
       road2.position.y = 0.11;
       road2.material = roadMat;
 
+      
+      
+      const buildingTexturePaths = [
+        "/building.jpg",
+        "/building1.jpg",
+        "/building2.jpg",
+        "/building3.jpg",
+      ];
+
+      
+      const topColor = new Color3(0.5, 0.5, 0.52);
+
+      
+      
+      const buildingMultiMats: MultiMaterial[] = buildingTexturePaths.map((path, i) => {
+        const sideMat = new StandardMaterial(`buildingSideMat_${i}`, scene);
+        const tex = new Texture(path, scene);
+        tex.uScale = 1;
+        tex.vScale = 1;
+        sideMat.diffuseTexture = tex;
+        sideMat.specularColor = new Color3(0.05, 0.05, 0.05);
+
+        const topMat = new StandardMaterial(`buildingTopMat_${i}`, scene);
+        topMat.diffuseColor = topColor;
+        topMat.specularColor = new Color3(0.05, 0.05, 0.05);
+
+        const multiMat = new MultiMaterial(`buildingMultiMat_${i}`, scene);
+        
+        multiMat.subMaterials.push(sideMat);
+        multiMat.subMaterials.push(topMat);
+        return multiMat;
+      });
+
+      
+      
+      
+      
+      const applyBuildingMaterial = (box: Mesh, multiMat: MultiMaterial) => {
+        box.material = multiMat;
+        box.subMeshes = [];
+        const verticesCount = box.getTotalVertices();
+        
+        
+        const indicesPerFace = 6;
+        for (let face = 0; face < 6; face++) {
+          const isTopOrBottom = face === 4 || face === 5;
+          new SubMesh(
+            isTopOrBottom ? 1 : 0,
+            0,
+            verticesCount,
+            face * indicesPerFace,
+            indicesPerFace,
+            box,
+          );
+        }
+      };
+
       const size = 100;
       const spacing = 7;
-      const buildingPalette = [
-        new Color3(0.55, 0.58, 0.65),
-        new Color3(0.42, 0.46, 0.55),
-        new Color3(0.6, 0.5, 0.45),
-        new Color3(0.35, 0.4, 0.5),
-      ];
 
       for (let x = -size / 2; x < size / 2; x += spacing) {
         for (let z = -size / 2; z < size / 2; z += spacing) {
@@ -108,11 +167,9 @@ export default function DropCity() {
           );
           building.position = new Vector3(x, h / 2, z);
 
-          const mat = new StandardMaterial(`bm_${x}_${z}`, scene);
-          mat.diffuseColor =
-            buildingPalette[Math.floor(Math.random() * buildingPalette.length)];
-          mat.specularColor = new Color3(0.05, 0.05, 0.05);
-          building.material = mat;
+          const variant =
+            buildingMultiMats[Math.floor(Math.random() * buildingMultiMats.length)];
+          applyBuildingMaterial(building, variant);
         }
       }
 
@@ -174,7 +231,7 @@ export default function DropCity() {
       window.addEventListener("keydown", onKeyDown);
       window.addEventListener("keyup", onKeyUp);
 
-      const speed = 0.09;
+      const speed = 0.1;
       const turnSpeed = 0.03;
       const friction = 0.92;
       const velocity = new Vector3(0, 0, 0);
@@ -206,7 +263,13 @@ export default function DropCity() {
         droneRoot.position.addInPlace(velocity);
         velocity.scaleInPlace(friction);
 
-        camera.target = Vector3.Lerp(camera.target, droneRoot.position, 0.1);
+        
+        camera.target.copyFrom(droneRoot.position);
+        const desiredAlpha = -droneRoot.rotation.y - Math.PI / 2;
+        let diff = desiredAlpha - camera.alpha;
+        diff = ((diff + Math.PI) % (2 * Math.PI)) - Math.PI;
+        camera.alpha += diff * 0.08;
+
         scene.render();
       });
 
