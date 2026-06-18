@@ -245,7 +245,7 @@ export default function DropCity() {
       window.addEventListener("keydown", onKeyDown);
       window.addEventListener("keyup", onKeyUp);
 
-      const speed = 0.01;
+      const speed = 0.03;
       const turnSpeed = 0.03;
       const friction = 0.92;
       const velocity = new Vector3(0, 0, 0);
@@ -261,8 +261,8 @@ export default function DropCity() {
         if (keys.s) velocity.addInPlace(forward.scale(-speed));
         if (keys.space) velocity.y -= speed;
         if (keys.shift) velocity.y += speed;
-        if (keys.a) droneRoot.rotation.y += turnSpeed;
-        if (keys.d) droneRoot.rotation.y -= turnSpeed;
+        if (keys.a) droneRoot.rotation.y -= turnSpeed;
+        if (keys.d) droneRoot.rotation.y += turnSpeed;
 
         let targetRotX = 0;
         let targetRotZ = 0;
