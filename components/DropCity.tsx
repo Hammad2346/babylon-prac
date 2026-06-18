@@ -52,7 +52,7 @@ export default function DropCity() {
         "camera",
         Math.PI / 2,
         Math.PI / 2.5,
-        12,
+        4,
         Vector3.Zero(),
         scene,
       );
@@ -66,7 +66,7 @@ export default function DropCity() {
         new Vector3(0.3, 1, 0.2),
         scene,
       );
-      light.intensity = 0.45;
+      light.intensity = 0.75;
       light.diffuse = new Color3(0.95, 0.96, 1);
       light.groundColor = new Color3(0.12, 0.13, 0.18);
 
@@ -187,7 +187,7 @@ export default function DropCity() {
         droneModel.position = Vector3.Zero();
         droneModel.rotation = Vector3.Zero();
 
-        droneModel.scaling = new Vector3(0.2, 0.2, 0.2);
+        droneModel.scaling = new Vector3(0.05, 0.05, 0.05);
       });
 
       // const body = MeshBuilder.CreateBox(
@@ -245,7 +245,7 @@ export default function DropCity() {
       window.addEventListener("keydown", onKeyDown);
       window.addEventListener("keyup", onKeyUp);
 
-      const speed = 0.1;
+      const speed = 0.01;
       const turnSpeed = 0.03;
       const friction = 0.92;
       const velocity = new Vector3(0, 0, 0);
