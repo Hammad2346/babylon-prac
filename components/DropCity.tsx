@@ -34,7 +34,7 @@ export default function DropCity() {
       scene = new Scene(engine);
       scene.clearColor = new Color4(0.05, 0.06, 0.1, 1);
       scene.fogMode = Scene.FOGMODE_NONE;
-      scene.fogDensity = 0.52;
+      scene.fogDensity = 0.92;
       scene.fogColor = new Color3(0.05, 0.06, 0.1);
 
       const skyDome = new PhotoDome(
@@ -52,7 +52,7 @@ export default function DropCity() {
         "camera",
         Math.PI / 2,
         Math.PI / 2.5,
-        24,
+        12,
         Vector3.Zero(),
         scene,
       );
@@ -66,7 +66,7 @@ export default function DropCity() {
         new Vector3(0.3, 1, 0.2),
         scene,
       );
-      light.intensity = 0.85;
+      light.intensity = 0.45;
       light.diffuse = new Color3(0.95, 0.96, 1);
       light.groundColor = new Color3(0.12, 0.13, 0.18);
 
@@ -134,7 +134,7 @@ export default function DropCity() {
         box.material = multiMat;
         box.subMeshes = [];
         const verticesCount = box.getTotalVertices();
-
+        console.log(verticesCount)
         const indicesPerFace = 6;
         for (let face = 0; face < 6; face++) {
           const isTopOrBottom = face === 4 || face === 5;
