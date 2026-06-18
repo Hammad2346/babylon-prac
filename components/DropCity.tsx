@@ -14,8 +14,10 @@ import {
   SubMesh,
   Texture,
   Vector3,
+  SceneLoader,
 } from "@babylonjs/core";
 import { useEffect, useRef } from "react";
+import "@babylonjs/loaders";
 
 export default function DropCity() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -32,10 +34,9 @@ export default function DropCity() {
       scene = new Scene(engine);
       scene.clearColor = new Color4(0.05, 0.06, 0.1, 1);
       scene.fogMode = Scene.FOGMODE_NONE;
-      scene.fogDensity = 0.012;
+      scene.fogDensity = 0.52;
       scene.fogColor = new Color3(0.05, 0.06, 0.1);
 
-      
       const skyDome = new PhotoDome(
         "skyDome",
         "/sky.jpg",
@@ -50,7 +51,7 @@ export default function DropCity() {
       const camera = new ArcRotateCamera(
         "camera",
         Math.PI / 2,
-        Math.PI / 3,
+        Math.PI / 2.5,
         24,
         Vector3.Zero(),
         scene,
@@ -60,7 +61,11 @@ export default function DropCity() {
       camera.upperRadiusLimit = 60;
       camera.upperBetaLimit = Math.PI / 2.05;
 
-      const light = new HemisphericLight("light", new Vector3(0.3, 1, 0.2), scene);
+      const light = new HemisphericLight(
+        "light",
+        new Vector3(0.3, 1, 0.2),
+        scene,
+      );
       light.intensity = 0.85;
       light.diffuse = new Color3(0.95, 0.96, 1);
       light.groundColor = new Color3(0.12, 0.13, 0.18);
@@ -95,8 +100,6 @@ export default function DropCity() {
       road2.position.y = 0.11;
       road2.material = roadMat;
 
-      
-      
       const buildingTexturePaths = [
         "/building.jpg",
         "/building1.jpg",
@@ -104,40 +107,34 @@ export default function DropCity() {
         "/building3.jpg",
       ];
 
-      
       const topColor = new Color3(0.5, 0.5, 0.52);
 
-      
-      
-      const buildingMultiMats: MultiMaterial[] = buildingTexturePaths.map((path, i) => {
-        const sideMat = new StandardMaterial(`buildingSideMat_${i}`, scene);
-        const tex = new Texture(path, scene);
-        tex.uScale = 1;
-        tex.vScale = 1;
-        sideMat.diffuseTexture = tex;
-        sideMat.specularColor = new Color3(0.05, 0.05, 0.05);
+      const buildingMultiMats: MultiMaterial[] = buildingTexturePaths.map(
+        (path, i) => {
+          const sideMat = new StandardMaterial(`buildingSideMat_${i}`, scene);
+          const tex = new Texture(path, scene);
+          tex.uScale = 1;
+          tex.vScale = 1;
+          sideMat.diffuseTexture = tex;
+          sideMat.specularColor = new Color3(0.05, 0.05, 0.05);
 
-        const topMat = new StandardMaterial(`buildingTopMat_${i}`, scene);
-        topMat.diffuseColor = topColor;
-        topMat.specularColor = new Color3(0.05, 0.05, 0.05);
+          const topMat = new StandardMaterial(`buildingTopMat_${i}`, scene);
+          topMat.diffuseColor = topColor;
+          topMat.specularColor = new Color3(0.05, 0.05, 0.05);
 
-        const multiMat = new MultiMaterial(`buildingMultiMat_${i}`, scene);
-        
-        multiMat.subMaterials.push(sideMat);
-        multiMat.subMaterials.push(topMat);
-        return multiMat;
-      });
+          const multiMat = new MultiMaterial(`buildingMultiMat_${i}`, scene);
 
-      
-      
-      
-      
+          multiMat.subMaterials.push(sideMat);
+          multiMat.subMaterials.push(topMat);
+          return multiMat;
+        },
+      );
+
       const applyBuildingMaterial = (box: Mesh, multiMat: MultiMaterial) => {
         box.material = multiMat;
         box.subMeshes = [];
         const verticesCount = box.getTotalVertices();
-        
-        
+
         const indicesPerFace = 6;
         for (let face = 0; face < 6; face++) {
           const isTopOrBottom = face === 4 || face === 5;
@@ -168,37 +165,53 @@ export default function DropCity() {
           building.position = new Vector3(x, h / 2, z);
 
           const variant =
-            buildingMultiMats[Math.floor(Math.random() * buildingMultiMats.length)];
+            buildingMultiMats[
+              Math.floor(Math.random() * buildingMultiMats.length)
+            ];
           applyBuildingMaterial(building, variant);
         }
       }
 
-      const droneRoot = MeshBuilder.CreateBox("droneRoot", { size: 1 }, scene);
+      const droneRoot = MeshBuilder.CreateBox(
+        "droneRoot",
+        { size: 0.2 },
+        scene,
+      );
       droneRoot.isVisible = false;
       droneRoot.position = new Vector3(0, 5, 0);
 
-      const body = MeshBuilder.CreateBox(
-        "body",
-        { width: 1.5, height: 0.3, depth: 1.5 },
-        scene,
-      );
-      body.parent = droneRoot;
-      const bodyMat = new StandardMaterial("bodyMat", scene);
-      bodyMat.diffuseColor = new Color3(0.85, 0.87, 0.9);
-      bodyMat.specularColor = new Color3(0.3, 0.3, 0.3);
-      body.material = bodyMat;
+      SceneLoader.ImportMesh("", "/", "drone.glb", scene, (meshes) => {
+        const droneModel = meshes[0];
 
-      const indicator = MeshBuilder.CreateBox(
-        "indicator",
-        { width: 0.15, height: 0.15, depth: 0.9 },
-        scene,
-      );
-      indicator.parent = droneRoot;
-      indicator.position = new Vector3(0, 0.05, 1.1);
-      const indicatorMat = new StandardMaterial("indicatorMat", scene);
-      indicatorMat.diffuseColor = new Color3(1, 0.25, 0.2);
-      indicatorMat.emissiveColor = new Color3(0.6, 0.1, 0.05);
-      indicator.material = indicatorMat;
+        droneModel.parent = droneRoot;
+        droneModel.position = Vector3.Zero();
+        droneModel.rotation = Vector3.Zero();
+
+        droneModel.scaling = new Vector3(0.2, 0.2, 0.2);
+      });
+
+      // const body = MeshBuilder.CreateBox(
+      //   "body",
+      //   { width: 1.5, height: 0.3, depth: 1.5 },
+      //   scene,
+      // );
+      // body.parent = droneRoot;
+      // const bodyMat = new StandardMaterial("bodyMat", scene);
+      // bodyMat.diffuseColor = new Color3(0.85, 0.87, 0.9);
+      // bodyMat.specularColor = new Color3(0.3, 0.3, 0.3);
+      // body.material = bodyMat;
+
+      // const indicator = MeshBuilder.CreateBox(
+      //   "indicator",
+      //   { width: 0.15, height: 0.15, depth: 0.9 },
+      //   scene,
+      // );
+      // indicator.parent = droneRoot;
+      // indicator.position = new Vector3(0, 0.05, 1.1);
+      // const indicatorMat = new StandardMaterial("indicatorMat", scene);
+      // indicatorMat.diffuseColor = new Color3(1, 0.25, 0.2);
+      // indicatorMat.emissiveColor = new Color3(0.6, 0.1, 0.05);
+      // indicator.material = indicatorMat;
 
       const keys: Record<string, boolean> = {
         w: false,
@@ -211,7 +224,8 @@ export default function DropCity() {
 
       const onKeyDown = (e: KeyboardEvent) => {
         const key = e.key.toLowerCase();
-        if (key === " " || key === "arrowup" || key === "arrowdown") e.preventDefault();
+        if (key === " " || key === "arrowup" || key === "arrowdown")
+          e.preventDefault();
         if (key === " ") keys.space = true;
         if (key === "shift") keys.shift = true;
         if (key === "w") keys.w = true;
@@ -263,7 +277,6 @@ export default function DropCity() {
         droneRoot.position.addInPlace(velocity);
         velocity.scaleInPlace(friction);
 
-        
         camera.target.copyFrom(droneRoot.position);
         const desiredAlpha = -droneRoot.rotation.y - Math.PI / 2;
         let diff = desiredAlpha - camera.alpha;
