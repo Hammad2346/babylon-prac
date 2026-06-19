@@ -49,12 +49,12 @@ export default function DropCity() {
         "camera",
         Math.PI / 2,
         Math.PI / 2.5,
-        4,
+        2,
         Vector3.Zero(),
         scene,
       );
       camera.attachControl(canvas, true);
-      camera.lowerRadiusLimit = 8;
+      camera.lowerRadiusLimit = 1;
       camera.upperRadiusLimit = 60;
       camera.upperBetaLimit = Math.PI / 2.05;
 
@@ -192,28 +192,22 @@ export default function DropCity() {
         droneModel.scaling = new Vector3(0.05, 0.05, 0.05);
       });
 
-      // const body = MeshBuilder.CreateBox(
-      //   "body",
-      //   { width: 1.5, height: 0.3, depth: 1.5 },
-      //   scene,
-      // );
-      // body.parent = droneRoot;
-      // const bodyMat = new StandardMaterial("bodyMat", scene);
-      // bodyMat.diffuseColor = new Color3(0.85, 0.87, 0.9);
-      // bodyMat.specularColor = new Color3(0.3, 0.3, 0.3);
-      // body.material = bodyMat;
 
-      // const indicator = MeshBuilder.CreateBox(
-      //   "indicator",
-      //   { width: 0.15, height: 0.15, depth: 0.9 },
-      //   scene,
-      // );
-      // indicator.parent = droneRoot;
-      // indicator.position = new Vector3(0, 0.05, 1.1);
-      // const indicatorMat = new StandardMaterial("indicatorMat", scene);
-      // indicatorMat.diffuseColor = new Color3(1, 0.25, 0.2);
-      // indicatorMat.emissiveColor = new Color3(0.6, 0.1, 0.05);
-      // indicator.material = indicatorMat;
+
+      let dropLocation = getDropBuilding(buildingColliders)
+
+      const indicatorMat = new StandardMaterial("indicatorMat", scene);
+indicatorMat.diffuseColor = new Color3(0, 1, 0);
+indicatorMat.emissiveColor = new Color3(0, 0.8, 0);
+
+const indicator = MeshBuilder.CreateBox("indicator", {
+  width:  (dropLocation.hw - 0.3) * 2,
+  depth:  (dropLocation.hd - 0.3) * 2,
+  height: 0.1,
+}, scene);
+indicator.position = new Vector3(dropLocation.x, dropLocation.h + 0.05, dropLocation.z);
+indicator.material = indicatorMat;
+
 
       const keys: Record<string, boolean> = {
         w: false,
@@ -247,8 +241,8 @@ export default function DropCity() {
       window.addEventListener("keydown", onKeyDown);
       window.addEventListener("keyup", onKeyUp);
 
-      const speed = 0.06;
-      const turnSpeed = 0.06;
+      const speed = 0.04;
+      const turnSpeed = 0.04;
       const friction = 0.92;
       const velocity = new Vector3(0, 0, 0);
 
@@ -321,7 +315,14 @@ export default function DropCity() {
             }
           }
         }
-        // ────────────────────────────────────────────────────────────────
+        
+        const dox=dp.x-dropLocation.x
+        const doz=dp.z-dropLocation.z
+        const withindropFootprint=Math.abs(dox)<dropLocation.hw&&Math.abs(doz)<dropLocation.hd
+        if(withindropFootprint&& dp.y<dropLocation.h+1) {
+          dropLocation=getDropBuilding(buildingColliders)
+          indicator.position= new Vector3(dropLocation.x,dropLocation.h+0.05,dropLocation.z)
+        }
 
         camera.target.copyFrom(droneRoot.position);
         const desiredAlpha = -droneRoot.rotation.y - Math.PI / 2;
@@ -350,6 +351,10 @@ export default function DropCity() {
     };
   }, []);
 
+  function getDropBuilding(buildingColliders:{x:number,z:number,hw:number,hd:number,h:number}[]):{x:number,z:number,hw:number,hd:number,h:number}{
+    const dropLocation=buildingColliders[Math.floor(Math.random() * buildingColliders.length)];
+      return dropLocation
+  }
   return (
     <canvas
       ref={canvasRef}
@@ -357,3 +362,4 @@ export default function DropCity() {
     />
   );
 }
+
