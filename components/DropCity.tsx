@@ -40,10 +40,7 @@ export default function DropCity() {
       const skyDome = new PhotoDome(
         "skyDome",
         "/sky.jpg",
-        {
-          resolution: 32,
-          size: 1000,
-        },
+        { resolution: 32, size: 1000 },
         scene,
       );
       skyDome.mesh.infiniteDistance = true;
@@ -123,7 +120,6 @@ export default function DropCity() {
           topMat.specularColor = new Color3(0.05, 0.05, 0.05);
 
           const multiMat = new MultiMaterial(`buildingMultiMat_${i}`, scene);
-
           multiMat.subMaterials.push(sideMat);
           multiMat.subMaterials.push(topMat);
           return multiMat;
@@ -151,6 +147,14 @@ export default function DropCity() {
       const size = 100;
       const spacing = 7;
 
+      const buildingColliders: {
+        x: number;
+        z: number;
+        hw: number;
+        hd: number;
+        h: number;
+      }[] = [];
+
       for (let x = -size / 2; x < size / 2; x += spacing) {
         for (let z = -size / 2; z < size / 2; z += spacing) {
           if (Math.abs(x) < 6 || Math.abs(z) < 6) continue;
@@ -168,6 +172,7 @@ export default function DropCity() {
               Math.floor(Math.random() * buildingMultiMats.length)
             ];
           applyBuildingMaterial(building, variant);
+          buildingColliders.push({ x, z, hw: 2.8, hd: 2.8, h });
         }
       }
 
@@ -181,11 +186,9 @@ export default function DropCity() {
 
       SceneLoader.ImportMesh("", "/", "drone.glb", scene, (meshes) => {
         const droneModel = meshes[0];
-
         droneModel.parent = droneRoot;
         droneModel.position = Vector3.Zero();
         droneModel.rotation = Vector3.Zero();
-
         droneModel.scaling = new Vector3(0.05, 0.05, 0.05);
       });
 
@@ -244,8 +247,8 @@ export default function DropCity() {
       window.addEventListener("keydown", onKeyDown);
       window.addEventListener("keyup", onKeyUp);
 
-      const speed = 0.03;
-      const turnSpeed = 0.03;
+      const speed = 0.06;
+      const turnSpeed = 0.06;
       const friction = 0.92;
       const velocity = new Vector3(0, 0, 0);
 
@@ -275,6 +278,50 @@ export default function DropCity() {
 
         droneRoot.position.addInPlace(velocity);
         velocity.scaleInPlace(friction);
+
+        const dp = droneRoot.position;
+        if (dp.y < 0.5) {
+          dp.y = 0.5;
+          velocity.y = 0;
+        }
+
+        for (const b of buildingColliders) {
+          const ox = dp.x - b.x;
+          const oz = dp.z - b.z;
+          const withinFootprint =
+            Math.abs(ox) < b.hw && Math.abs(oz) < b.hd;
+
+    
+          const roofClearance = 0.5; 
+          const approachWindow = 1.2;
+          const withinRoofFootprint =
+            Math.abs(ox) < b.hw + 0.3 && Math.abs(oz) < b.hd + 0.3;
+
+          if (
+            withinRoofFootprint &&
+            dp.y <= b.h + approachWindow &&
+            dp.y >= b.h - approachWindow &&
+            velocity.y <= 0  
+          ) {
+            dp.y = b.h + roofClearance;
+            velocity.y = 0;
+            continue; 
+          }
+
+
+          if (withinFootprint && dp.y < b.h) {
+            const px = b.hw - Math.abs(ox);
+            const pz = b.hd - Math.abs(oz);
+            if (px < pz) {
+              dp.x += px * Math.sign(ox);
+              velocity.x = 0;
+            } else {
+              dp.z += pz * Math.sign(oz);
+              velocity.z = 0;
+            }
+          }
+        }
+        // ────────────────────────────────────────────────────────────────
 
         camera.target.copyFrom(droneRoot.position);
         const desiredAlpha = -droneRoot.rotation.y - Math.PI / 2;
