@@ -16,12 +16,12 @@ import {
   Vector3,
   SceneLoader,
 } from "@babylonjs/core";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import "@babylonjs/loaders";
 
 export default function DropCity() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-
+  const [score, setScore] = useState<number>(0);
   useEffect(() => {
     let engine: Engine;
     let scene: Scene;
@@ -192,22 +192,27 @@ export default function DropCity() {
         droneModel.scaling = new Vector3(0.05, 0.05, 0.05);
       });
 
-
-
-      let dropLocation = getDropBuilding(buildingColliders)
+      let dropLocation = getDropBuilding(buildingColliders);
 
       const indicatorMat = new StandardMaterial("indicatorMat", scene);
-indicatorMat.diffuseColor = new Color3(0, 1, 0);
-indicatorMat.emissiveColor = new Color3(0, 0.8, 0);
+      indicatorMat.diffuseColor = new Color3(0, 1, 0);
+      indicatorMat.emissiveColor = new Color3(0, 0.8, 0);
 
-const indicator = MeshBuilder.CreateBox("indicator", {
-  width:  (dropLocation.hw - 0.3) * 2,
-  depth:  (dropLocation.hd - 0.3) * 2,
-  height: 0.1,
-}, scene);
-indicator.position = new Vector3(dropLocation.x, dropLocation.h + 0.05, dropLocation.z);
-indicator.material = indicatorMat;
-
+      const indicator = MeshBuilder.CreateBox(
+        "indicator",
+        {
+          width: (dropLocation.hw - 0.3) * 2,
+          depth: (dropLocation.hd - 0.3) * 2,
+          height: 0.1,
+        },
+        scene,
+      );
+      indicator.position = new Vector3(
+        dropLocation.x,
+        dropLocation.h + 0.05,
+        dropLocation.z,
+      );
+      indicator.material = indicatorMat;
 
       const keys: Record<string, boolean> = {
         w: false,
@@ -282,11 +287,9 @@ indicator.material = indicatorMat;
         for (const b of buildingColliders) {
           const ox = dp.x - b.x;
           const oz = dp.z - b.z;
-          const withinFootprint =
-            Math.abs(ox) < b.hw && Math.abs(oz) < b.hd;
+          const withinFootprint = Math.abs(ox) < b.hw && Math.abs(oz) < b.hd;
 
-    
-          const roofClearance = 0.5; 
+          const roofClearance = 0.5;
           const approachWindow = 1.2;
           const withinRoofFootprint =
             Math.abs(ox) < b.hw + 0.3 && Math.abs(oz) < b.hd + 0.3;
@@ -295,13 +298,12 @@ indicator.material = indicatorMat;
             withinRoofFootprint &&
             dp.y <= b.h + approachWindow &&
             dp.y >= b.h - approachWindow &&
-            velocity.y <= 0  
+            velocity.y <= 0
           ) {
             dp.y = b.h + roofClearance;
             velocity.y = 0;
-            continue; 
+            continue;
           }
-
 
           if (withinFootprint && dp.y < b.h) {
             const px = b.hw - Math.abs(ox);
@@ -315,13 +317,19 @@ indicator.material = indicatorMat;
             }
           }
         }
-        
-        const dox=dp.x-dropLocation.x
-        const doz=dp.z-dropLocation.z
-        const withindropFootprint=Math.abs(dox)<dropLocation.hw&&Math.abs(doz)<dropLocation.hd
-        if(withindropFootprint&& dp.y<dropLocation.h+1) {
-          dropLocation=getDropBuilding(buildingColliders)
-          indicator.position= new Vector3(dropLocation.x,dropLocation.h+0.05,dropLocation.z)
+
+        const dox = dp.x - dropLocation.x;
+        const doz = dp.z - dropLocation.z;
+        const withindropFootprint =
+          Math.abs(dox) < dropLocation.hw && Math.abs(doz) < dropLocation.hd;
+        if (withindropFootprint && dp.y < dropLocation.h + 1) {
+          dropLocation = getDropBuilding(buildingColliders);
+          indicator.position = new Vector3(
+            dropLocation.x,
+            dropLocation.h + 0.05,
+            dropLocation.z,
+          );
+          setScore((s) => s + 1);
         }
 
         camera.target.copyFrom(droneRoot.position);
@@ -351,15 +359,31 @@ indicator.material = indicatorMat;
     };
   }, []);
 
-  function getDropBuilding(buildingColliders:{x:number,z:number,hw:number,hd:number,h:number}[]):{x:number,z:number,hw:number,hd:number,h:number}{
-    const dropLocation=buildingColliders[Math.floor(Math.random() * buildingColliders.length)];
-      return dropLocation
+  function getDropBuilding(
+    buildingColliders: {
+      x: number;
+      z: number;
+      hw: number;
+      hd: number;
+      h: number;
+    }[],
+  ): { x: number; z: number; hw: number; hd: number; h: number } {
+    const dropLocation =
+      buildingColliders[Math.floor(Math.random() * buildingColliders.length)];
+    return dropLocation;
   }
   return (
-    <canvas
-      ref={canvasRef}
-      style={{ width: "100%", height: "100vh", display: "block" }}
-    />
+    <div className="w-full h-full relative">
+  <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-3 bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl px-6 py-3">
+    <div className="flex flex-col items-center">
+      <span className="text-white/50 text-xs uppercase tracking-widest font-medium">Score</span>
+      <span className="text-white text-3xl font-bold tabular-nums">{score}</span>
+    </div>
+  </div>
+  <canvas
+    ref={canvasRef}
+    style={{ width: "100%", height: "100vh", display: "block" }}
+  />
+</div>
   );
 }
-
