@@ -20,11 +20,15 @@ import {
 } from "@babylonjs/core";
 import { useEffect, useRef, useState } from "react";
 import "@babylonjs/loaders";
-import * as GUI from "@babylonjs/gui";
+
+const LAYER_MAIN = 0x10000000;
+const LAYER_MINIMAP = 0x20000000;
+const LAYER_BOTH = 0x30000000;
 
 export default function DropCity() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [score, setScore] = useState<number>(0);
+
   useEffect(() => {
     let engine: Engine;
     let scene: Scene;
@@ -47,6 +51,7 @@ export default function DropCity() {
         scene,
       );
       skyDome.mesh.infiniteDistance = true;
+      skyDome.mesh.layerMask = LAYER_MAIN;
 
       const camera = new ArcRotateCamera(
         "camera",
@@ -61,6 +66,7 @@ export default function DropCity() {
       camera.upperRadiusLimit = 60;
       camera.upperBetaLimit = Math.PI / 2.05;
       camera.viewport = new Viewport(0, 0, 1, 1);
+      camera.layerMask = LAYER_MAIN;
 
       const light = new HemisphericLight(
         "light",
@@ -80,6 +86,7 @@ export default function DropCity() {
       groundMat.diffuseColor = new Color3(0.08, 0.09, 0.12);
       groundMat.specularColor = new Color3(0, 0, 0);
       ground.material = groundMat;
+      ground.layerMask = LAYER_BOTH;
 
       const roadMat = new StandardMaterial("roadMat", scene);
       roadMat.diffuseColor = new Color3(0.16, 0.16, 0.18);
@@ -92,6 +99,7 @@ export default function DropCity() {
       );
       road1.position.y = 0.11;
       road1.material = roadMat;
+      road1.layerMask = LAYER_BOTH;
 
       const road2 = MeshBuilder.CreateBox(
         "road2",
@@ -100,6 +108,7 @@ export default function DropCity() {
       );
       road2.position.y = 0.11;
       road2.material = roadMat;
+      road2.layerMask = LAYER_BOTH;
 
       const buildingTexturePaths = [
         "/building.jpg",
@@ -170,6 +179,7 @@ export default function DropCity() {
             scene,
           );
           building.position = new Vector3(x, h / 2, z);
+          building.layerMask = LAYER_BOTH;
 
           const variant =
             buildingMultiMats[
@@ -187,6 +197,7 @@ export default function DropCity() {
       );
       droneRoot.isVisible = false;
       droneRoot.position = new Vector3(0, 5, 0);
+      droneRoot.layerMask = LAYER_MAIN;
 
       SceneLoader.ImportMesh("", "/", "drone.glb", scene, (meshes) => {
         const droneModel = meshes[0];
@@ -194,24 +205,42 @@ export default function DropCity() {
         droneModel.position = Vector3.Zero();
         droneModel.rotation = Vector3.Zero();
         droneModel.scaling = new Vector3(0.05, 0.05, 0.05);
+        meshes.forEach((m) => (m.layerMask = LAYER_MAIN));
       });
 
-      const miniMap=new ArcRotateCamera("miniMap",
-        Math.PI/2,
+      const minimapArrow = MeshBuilder.CreateCylinder(
+        "minimapArrow",
+        {
+          diameterTop: 0,
+          diameterBottom: 3,
+          height: 4,
+        },
+        scene,
+      );
+      minimapArrow.parent = null;
+      minimapArrow.rotation.x = Math.PI / 2; 
+
+      minimapArrow.position = Vector3.Zero();
+      minimapArrow.layerMask = LAYER_MINIMAP;
+
+      const arrowMat = new StandardMaterial("arrowMat", scene);
+      arrowMat.diffuseColor = new Color3(1, 0.25, 0.25);
+      arrowMat.emissiveColor = new Color3(1, 0.25, 0.25);
+      arrowMat.backFaceCulling = false;
+      minimapArrow.material = arrowMat;
+
+      const miniMap = new ArcRotateCamera(
+        "miniMap",
+        -Math.PI/2 ,
         0,
         50,
         droneRoot.position.clone(),
-        scene
-      )
+        scene,
+      );
       miniMap.viewport = new Viewport(0.75, 0.75, 0.24, 0.24);
-      let viewSize=10
+      // miniMap.upVector = new Vector3(0, 1, 0);
       miniMap.mode = Camera.ORTHOGRAPHIC_CAMERA;
-      miniMap.orthoLeft=-viewSize
-      miniMap.orthoRight=viewSize
-      miniMap.orthoBottom=-viewSize
-      miniMap.orthoTop=viewSize
-
-
+      miniMap.layerMask = LAYER_MINIMAP;
 
       let dropLocation = getDropBuilding(buildingsAccess);
 
@@ -234,6 +263,7 @@ export default function DropCity() {
         dropLocation.z,
       );
       indicator.material = indicatorMat;
+      indicator.layerMask = LAYER_BOTH;
 
       const keys: Record<string, boolean> = {
         w: false,
@@ -254,6 +284,8 @@ export default function DropCity() {
         if (key === "a") keys.a = true;
         if (key === "s") keys.s = true;
         if (key === "d") keys.d = true;
+        if (key === "r") minimapArrow.rotation.y += Math.PI / 4;
+  if (key === "t") minimapArrow.rotation.y -= Math.PI / 4;
       };
       const onKeyUp = (e: KeyboardEvent) => {
         const key = e.key.toLowerCase();
@@ -273,16 +305,23 @@ export default function DropCity() {
       const velocity = new Vector3(0, 0, 0);
 
       engine.runRenderLoop(() => {
-        miniMap.setTarget(droneRoot.position)
-        miniMap.position.x=droneRoot.position.x
-        miniMap.position.z=droneRoot.position.z
-        miniMap.position.y=droneRoot.position.y+50
-        const viewSize = droneRoot.position.y + 10;
+        miniMap.setTarget(droneRoot.position);
+        miniMap.position.x = droneRoot.position.x;
+        miniMap.position.z = droneRoot.position.z;
+        miniMap.position.y = droneRoot.position.y + 50;
 
+        const viewSize = droneRoot.position.y + 10;
         miniMap.orthoLeft = -viewSize;
         miniMap.orthoRight = viewSize;
         miniMap.orthoTop = viewSize;
         miniMap.orthoBottom = -viewSize;
+
+        minimapArrow.position.x =droneRoot.position.x;
+        minimapArrow.position.z =droneRoot.position.z;
+        minimapArrow.position.y = droneRoot.position.y;
+        minimapArrow.rotation.y = droneRoot.rotation.y;
+
+        minimapArrow.rotation.y = droneRoot.rotation.y;
 
         const forward = new Vector3(
           Math.sin(droneRoot.rotation.y),
@@ -372,7 +411,9 @@ export default function DropCity() {
 
         scene.render();
       });
-      scene.activeCameras=[camera,miniMap]
+
+      scene.activeCameras = [camera, miniMap];
+
       const onResize = () => engine.resize();
       window.addEventListener("resize", onResize);
 
@@ -384,7 +425,7 @@ export default function DropCity() {
     };
 
     const cleanup = init();
-    
+
     return () => {
       cleanup?.();
       engine?.dispose();
@@ -400,22 +441,27 @@ export default function DropCity() {
       h: number;
     }[],
   ): { x: number; z: number; hw: number; hd: number; h: number } {
-    const dropLocation =
-      buildingsAccess[Math.floor(Math.random() * buildingsAccess.length)];
-    return dropLocation;
+    return buildingsAccess[
+      Math.floor(Math.random() * buildingsAccess.length)
+    ];
   }
+
   return (
     <div className="w-full h-full relative">
-  <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-3 bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl px-6 py-3">
-    <div className="flex flex-col items-center">
-      <span className="text-white/50 text-xs uppercase tracking-widest font-medium">Score</span>
-      <span className="text-white text-3xl font-bold tabular-nums">{score}</span>
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-3 bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl px-6 py-3">
+        <div className="flex flex-col items-center">
+          <span className="text-white/50 text-xs uppercase tracking-widest font-medium">
+            Score
+          </span>
+          <span className="text-white text-3xl font-bold tabular-nums">
+            {score}
+          </span>
+        </div>
+      </div>
+      <canvas
+        ref={canvasRef}
+        style={{ width: "100%", height: "100vh", display: "block" }}
+      />
     </div>
-  </div>
-  <canvas
-    ref={canvasRef}
-    style={{ width: "100%", height: "100vh", display: "block" }}
-  />
-</div>
   );
 }
