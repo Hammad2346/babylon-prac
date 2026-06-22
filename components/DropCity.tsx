@@ -238,7 +238,6 @@ export default function DropCity() {
         scene,
       );
       miniMap.viewport = new Viewport(0.75, 0.75, 0.24, 0.24);
-      // miniMap.upVector = new Vector3(0, 1, 0);
       miniMap.mode = Camera.ORTHOGRAPHIC_CAMERA;
       miniMap.layerMask = LAYER_MINIMAP;
 
