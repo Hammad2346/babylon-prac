@@ -147,7 +147,7 @@ export default function DropCity() {
       const size = 100;
       const spacing = 7;
 
-      const buildingColliders: {
+      const buildingsAccess: {
         x: number;
         z: number;
         hw: number;
@@ -172,7 +172,7 @@ export default function DropCity() {
               Math.floor(Math.random() * buildingMultiMats.length)
             ];
           applyBuildingMaterial(building, variant);
-          buildingColliders.push({ x, z, hw: 2.8, hd: 2.8, h });
+          buildingsAccess.push({ x, z, hw: 2.8, hd: 2.8, h });
         }
       }
 
@@ -192,7 +192,7 @@ export default function DropCity() {
         droneModel.scaling = new Vector3(0.05, 0.05, 0.05);
       });
 
-      let dropLocation = getDropBuilding(buildingColliders);
+      let dropLocation = getDropBuilding(buildingsAccess);
 
       const indicatorMat = new StandardMaterial("indicatorMat", scene);
       indicatorMat.diffuseColor = new Color3(0, 1, 0);
@@ -284,7 +284,7 @@ export default function DropCity() {
           velocity.y = 0;
         }
 
-        for (const b of buildingColliders) {
+        for (const b of buildingsAccess) {
           const ox = dp.x - b.x;
           const oz = dp.z - b.z;
           const withinFootprint = Math.abs(ox) < b.hw && Math.abs(oz) < b.hd;
@@ -323,7 +323,7 @@ export default function DropCity() {
         const withindropFootprint =
           Math.abs(dox) < dropLocation.hw && Math.abs(doz) < dropLocation.hd;
         if (withindropFootprint && dp.y < dropLocation.h + 1) {
-          dropLocation = getDropBuilding(buildingColliders);
+          dropLocation = getDropBuilding(buildingsAccess);
           indicator.position = new Vector3(
             dropLocation.x,
             dropLocation.h + 0.05,
@@ -360,7 +360,7 @@ export default function DropCity() {
   }, []);
 
   function getDropBuilding(
-    buildingColliders: {
+    buildingsAccess: {
       x: number;
       z: number;
       hw: number;
@@ -369,7 +369,7 @@ export default function DropCity() {
     }[],
   ): { x: number; z: number; hw: number; hd: number; h: number } {
     const dropLocation =
-      buildingColliders[Math.floor(Math.random() * buildingColliders.length)];
+      buildingsAccess[Math.floor(Math.random() * buildingsAccess.length)];
     return dropLocation;
   }
   return (
