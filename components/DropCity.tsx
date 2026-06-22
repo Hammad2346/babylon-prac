@@ -15,9 +15,12 @@ import {
   Texture,
   Vector3,
   SceneLoader,
+  Viewport,
+  Camera,
 } from "@babylonjs/core";
 import { useEffect, useRef, useState } from "react";
 import "@babylonjs/loaders";
+import * as GUI from "@babylonjs/gui";
 
 export default function DropCity() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -57,6 +60,7 @@ export default function DropCity() {
       camera.lowerRadiusLimit = 1;
       camera.upperRadiusLimit = 60;
       camera.upperBetaLimit = Math.PI / 2.05;
+      camera.viewport = new Viewport(0, 0, 1, 1);
 
       const light = new HemisphericLight(
         "light",
@@ -192,6 +196,23 @@ export default function DropCity() {
         droneModel.scaling = new Vector3(0.05, 0.05, 0.05);
       });
 
+      const miniMap=new ArcRotateCamera("miniMap",
+        Math.PI/2,
+        0,
+        50,
+        droneRoot.position.clone(),
+        scene
+      )
+      miniMap.viewport = new Viewport(0.75, 0.75, 0.24, 0.24);
+      let viewSize=10
+      miniMap.mode = Camera.ORTHOGRAPHIC_CAMERA;
+      miniMap.orthoLeft=-viewSize
+      miniMap.orthoRight=viewSize
+      miniMap.orthoBottom=-viewSize
+      miniMap.orthoTop=viewSize
+
+
+
       let dropLocation = getDropBuilding(buildingsAccess);
 
       const indicatorMat = new StandardMaterial("indicatorMat", scene);
@@ -252,6 +273,17 @@ export default function DropCity() {
       const velocity = new Vector3(0, 0, 0);
 
       engine.runRenderLoop(() => {
+        miniMap.setTarget(droneRoot.position)
+        miniMap.position.x=droneRoot.position.x
+        miniMap.position.z=droneRoot.position.z
+        miniMap.position.y=droneRoot.position.y+50
+        const viewSize = droneRoot.position.y + 10;
+
+        miniMap.orthoLeft = -viewSize;
+        miniMap.orthoRight = viewSize;
+        miniMap.orthoTop = viewSize;
+        miniMap.orthoBottom = -viewSize;
+
         const forward = new Vector3(
           Math.sin(droneRoot.rotation.y),
           0,
@@ -340,7 +372,7 @@ export default function DropCity() {
 
         scene.render();
       });
-
+      scene.activeCameras=[camera,miniMap]
       const onResize = () => engine.resize();
       window.addEventListener("resize", onResize);
 
@@ -352,7 +384,7 @@ export default function DropCity() {
     };
 
     const cleanup = init();
-
+    
     return () => {
       cleanup?.();
       engine?.dispose();
